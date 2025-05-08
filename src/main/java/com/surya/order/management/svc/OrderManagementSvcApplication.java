@@ -1,4 +1,4 @@
-package com.surya.order_management_svc;
+package com.surya.order.management.svc;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
