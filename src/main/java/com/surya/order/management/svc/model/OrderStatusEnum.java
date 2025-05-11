@@ -1,7 +1,7 @@
 package com.surya.order.management.svc.model;
 
 public enum OrderStatusEnum {
-    PENDING,
+    PLACED,
     CONFIRMED,
     SHIPPED,
     DELIVERED,
