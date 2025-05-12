@@ -4,6 +4,7 @@ import com.surya.order.management.svc.excpetion.InvalidInputException;
 import com.surya.order.management.svc.model.OrderDetails;
 import com.surya.order.management.svc.model.OrderMessage;
 import com.surya.order.management.svc.model.OrderStatusEnum;
+import com.surya.order.management.svc.model.PaymentMode;
 import com.surya.order.management.svc.repository.OrderRepository;
 import jakarta.validation.Valid;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,12 +35,17 @@ public class OrderService {
 
     public ResponseEntity<String> placeOrder(@Valid OrderDetails orderDetails) {
         logger.info("Entry placeOrder>>>");
+        OrderDetails placedOrderDetails;
 
-        orderDetails.setOrderStatus(OrderStatusEnum.PLACED);
-        OrderDetails placedOrderDetails = orderRepository.save(orderDetails);
-
+        if(orderDetails.getPaymentMode().equals(PaymentMode.CASH_ON_DELIVERY)) {
+            orderDetails.setOrderStatus(OrderStatusEnum.CONFIRMED);
+        }else{
+            orderDetails.setOrderStatus(OrderStatusEnum.PLACED);
+            //TODO Call PaymentManagement service for Payment
+        }
+        placedOrderDetails = orderRepository.save(orderDetails);
         rabbitMQProducer.updateInventory(new OrderMessage(UUID.randomUUID().toString(), orderDetails.getOrderStatus().toString(),
-                orderDetails.getOrderedProduct(), new Date()));
+                orderDetails.getOrderedProduct(), LocalDateTime.now()));
 
         logger.info("Exit placeOrder<<<");
         return ResponseEntity.status(HttpStatus.CREATED).body("Thanks for Placing Order!!\n" + "Your OrderId : " + placedOrderDetails.getOrderId());
@@ -67,6 +74,10 @@ public class OrderService {
             OrderDetails orderDetails = byOrderIdResponse.get();
             orderDetails.setOrderStatus(OrderStatusEnum.CANCELED);
             OrderDetails cancelledOrderDetails = orderRepository.save(orderDetails);
+
+            rabbitMQProducer.updateInventory(new OrderMessage(UUID.randomUUID().toString(), cancelledOrderDetails.getOrderStatus().toString(),
+                    cancelledOrderDetails.getOrderedProduct(), LocalDateTime.now()));
+
             return ResponseEntity.status(HttpStatus.OK).body(cancelledOrderDetails);
         }else{
             logger.error("Order Details Not found, Invalid Order Id");
