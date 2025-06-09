@@ -19,9 +19,12 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
+@SuppressWarnings("LoggingSimilarMessage")
 @Service
 public class OrderService {
 
+    public static final String ORDER_DETAILS_FOUND = "Order Details found!!!";
+    public static final String ORDER_DETAILS_NOT_FOUND_INVALID_ORDER_ID = "Order Details Not found, Invalid Order Id";
     private final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     private final OrderRepository orderRepository;
@@ -44,8 +47,8 @@ public class OrderService {
             //TODO Call PaymentManagement service for Payment
         }
         placedOrderDetails = orderRepository.save(orderDetails);
-        rabbitMQProducer.updateInventory(new OrderMessage(UUID.randomUUID().toString(), orderDetails.getOrderStatus().toString(),
-                orderDetails.getOrderedProduct(), LocalDateTime.now()));
+//        rabbitMQProducer.updateInventory(new OrderMessage(UUID.randomUUID().toString(), orderDetails.getOrderStatus().toString(),
+//                orderDetails.getOrderedProduct(), LocalDateTime.now()));
 
         logger.info("Exit placeOrder<<<");
         return ResponseEntity.status(HttpStatus.CREATED).body("Thanks for Placing Order!!\n" + "Your OrderId : " + placedOrderDetails.getOrderId());
@@ -56,7 +59,7 @@ public class OrderService {
         Optional<OrderDetails> getDetailsByUserId = orderRepository.findByUserId(userId);
 
         if(getDetailsByUserId.isPresent()){
-            logger.info("Order Details found!!!");
+            logger.info(ORDER_DETAILS_FOUND);
             return ResponseEntity.status(HttpStatus.OK).body(getDetailsByUserId.get());
         }else{
             logger.error("Order Details Not found, Invalid User Id");
@@ -65,8 +68,22 @@ public class OrderService {
 
     }
 
-    public ResponseEntity<OrderDetails> getOrderByOrderId(Long orderId) throws InvalidInputException {
-        logger.info("Entry getOrderByOrderId>>>");
+    public ResponseEntity<OrderDetails> getByOrderId(Long orderId) throws InvalidInputException {
+        logger.info("Entry getByOrderId>>>");
+        Optional<OrderDetails> getDetailsByUserId = orderRepository.findById(orderId);
+
+        if(getDetailsByUserId.isPresent()){
+            logger.info(ORDER_DETAILS_FOUND);
+            return ResponseEntity.status(HttpStatus.OK).body(getDetailsByUserId.get());
+        }else{
+            logger.error(ORDER_DETAILS_NOT_FOUND_INVALID_ORDER_ID);
+            throw new InvalidInputException(ORDER_DETAILS_NOT_FOUND_INVALID_ORDER_ID);
+        }
+
+    }
+
+    public ResponseEntity<OrderDetails> cancelByOrderId(Long orderId) throws InvalidInputException {
+        logger.info("Entry cancelByOrderId>>>");
         Optional<OrderDetails> byOrderIdResponse = orderRepository.findById(orderId);
 
         if(byOrderIdResponse.isPresent()){
@@ -75,13 +92,14 @@ public class OrderService {
             orderDetails.setOrderStatus(OrderStatusEnum.CANCELED);
             OrderDetails cancelledOrderDetails = orderRepository.save(orderDetails);
 
-            rabbitMQProducer.updateInventory(new OrderMessage(UUID.randomUUID().toString(), cancelledOrderDetails.getOrderStatus().toString(),
-                    cancelledOrderDetails.getOrderedProduct(), LocalDateTime.now()));
+//            rabbitMQProducer.updateInventory(new OrderMessage(UUID.randomUUID().toString(), cancelledOrderDetails.getOrderStatus().toString(),
+//                    cancelledOrderDetails.getOrderedProduct(), LocalDateTime.now()));
 
+            logger.info("Exit cancelByOrderId<<<");
             return ResponseEntity.status(HttpStatus.OK).body(cancelledOrderDetails);
         }else{
-            logger.error("Order Details Not found, Invalid Order Id");
-            throw new InvalidInputException("Order Details Not found, Invalid Order Id");
+            logger.error(ORDER_DETAILS_NOT_FOUND_INVALID_ORDER_ID);
+            throw new InvalidInputException(ORDER_DETAILS_NOT_FOUND_INVALID_ORDER_ID);
         }
 
     }

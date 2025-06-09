@@ -42,7 +42,7 @@ public class OrderController {
     public ResponseEntity<OrderDetails> getOrderDetailsByOrderId(@PathVariable(name = "orderId") Long orderId) throws InvalidInputException {
         logger.info("Entry getOrderDetailsByOrderId>>> ");
 
-        ResponseEntity<OrderDetails> orderResponse = orderService.getOrderByOrderId(orderId);
+        ResponseEntity<OrderDetails> orderResponse = orderService.getByOrderId(orderId);
         logger.info("Exit getOrderDetailsByOrderId: {}", orderResponse);
         return orderResponse;
     }
@@ -51,7 +51,7 @@ public class OrderController {
     public ResponseEntity<OrderDetails> cancelByOrderId(@PathVariable(name = "orderId") Long orderId) throws InvalidInputException {
         logger.info("Entry cancelByOrderId>>> ");
 
-        ResponseEntity<OrderDetails> orderResponse = orderService.getOrderByOrderId(orderId);
+        ResponseEntity<OrderDetails> orderResponse = orderService.cancelByOrderId(orderId);
         logger.info("Exit cancelByOrderId: {}", orderResponse);
         return orderResponse;
     }
